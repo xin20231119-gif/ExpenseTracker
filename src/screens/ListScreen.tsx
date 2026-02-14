@@ -16,12 +16,14 @@ import { COLORS, SHADOWS, BORDER_RADIUS, SPACING, FONT_SIZE, FONT_WEIGHT, CATEGO
 
 export default function ListScreen() {
   const navigation = useNavigation<any>();
-  const { user } = useAuth();
+  const { user, phoneAuthenticated, phoneUserId } = useAuth();
   const [records, setRecords] = useState<ExpenseRecord[]>([]);
 
+  const currentUserId = user?.id || phoneUserId;
+
   const loadData = async () => {
-    if (user) {
-      const data = await getRecords(user.id);
+    if (currentUserId) {
+      const data = await getRecords(currentUserId);
       setRecords(data);
     }
   };
@@ -29,14 +31,14 @@ export default function ListScreen() {
   useFocusEffect(
     useCallback(() => {
       loadData();
-    }, [user])
+    }, [currentUserId])
   );
 
   useEffect(() => {
-    if (user) {
+    if (currentUserId) {
       loadData();
     }
-  }, [user]);
+  }, [currentUserId]);
 
   const handlePress = (record: ExpenseRecord) => {
     navigation.navigate('EditRecord', { record });

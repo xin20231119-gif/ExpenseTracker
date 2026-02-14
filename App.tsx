@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Platform, Modal, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
@@ -93,7 +93,15 @@ function HomeTabs() {
 
 // 主应用内容（包含导航）
 function AppContent() {
-  const { user, loading } = useAuth();
+  const { user, loading, refreshUser, phoneAuthenticated, setPhoneAuthenticated } = useAuth();
+  const [authKey, setAuthKey] = useState(0);
+
+  const handleAuthSuccess = async (phoneUserId?: string) => {
+    // 设置手机认证状态
+    setPhoneAuthenticated(true, phoneUserId);
+    // 强制重新渲染
+    setAuthKey(prev => prev + 1);
+  };
 
   if (loading) {
     return (
@@ -104,8 +112,9 @@ function AppContent() {
     );
   }
 
-  if (!user) {
-    return <AuthScreen onAuthSuccess={() => {}} />;
+  // 用户通过 Supabase auth 或手机号认证登录
+  if (!user && !phoneAuthenticated) {
+    return <AuthScreen key={authKey} onAuthSuccess={handleAuthSuccess} />;
   }
 
   return (

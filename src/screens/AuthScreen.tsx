@@ -9,13 +9,18 @@ import {
   Platform,
   StatusBar,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '../utils/supabase';
 import { COLORS, SHADOWS, BORDER_RADIUS, SPACING, FONT_SIZE, FONT_WEIGHT } from '../theme';
 
+const SUPABASE_URL = 'https://vbldhkgmyjauxsnhbajq.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_C1x8Z79yGSkHxKSbiao32A_Kc3XD8HI';
+const PHONE_AUTH_FUNCTION = `${SUPABASE_URL}/functions/v1/phone-auth`;
+
 interface AuthScreenProps {
-  onAuthSuccess: () => void;
+  onAuthSuccess: (userId?: string) => void;
 }
 
 type LoginMethod = 'email' | 'phone';
@@ -68,7 +73,7 @@ export default function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
     }
   };
 
-  // Phone login - send verification code
+  // Phone login - send verification code (使用自定义 Edge Function)
   const handleSendPhoneCode = async () => {
     if (!phone || phone.length !== 11) {
       setError('请输入正确的手机号');
@@ -79,22 +84,42 @@ export default function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
     setError('');
 
     try {
-      const { error } = await supabase.auth.signInWithOtp({
-        phone: '+86' + phone,
+      const response = await fetch(PHONE_AUTH_FUNCTION, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({
+          phone: phone,
+          action: 'send',
+        }),
       });
-      if (error) throw error;
+
+      const data = await response.json();
+
+      if (!response.ok || data.error) {
+        throw new Error(data.error || '发送验证码失败');
+      }
+
       setVerificationSent(true);
+      Alert.alert('验证码已发送', '请注意查收手机短信');
     } catch (err: any) {
-      setError(err.message || '发送验证码失败');
+      setError(err.message || '发送验证码失败，请重试');
     } finally {
       setLoading(false);
     }
   };
 
-  // Phone login - verify code
+  // Phone login - verify code (使用自定义 Edge Function)
   const handlePhoneLogin = async () => {
     if (!phone || !phoneCode) {
       setError('请输入手机号和验证码');
+      return;
+    }
+
+    if (phoneCode.length !== 6) {
+      setError('请输入6位验证码');
       return;
     }
 
@@ -102,13 +127,27 @@ export default function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
     setError('');
 
     try {
-      const { error } = await supabase.auth.verifyOtp({
-        phone: '+86' + phone,
-        token: phoneCode,
-        type: 'sms',
+      const response = await fetch(PHONE_AUTH_FUNCTION, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({
+          phone: phone,
+          code: phoneCode,
+          action: 'verify',
+        }),
       });
-      if (error) throw error;
-      onAuthSuccess();
+
+      const data = await response.json();
+
+      if (!response.ok || data.error) {
+        throw new Error(data.error || '验证码错误或已过期');
+      }
+
+      // 验证码正确，登录成功
+      onAuthSuccess(data.userId);
     } catch (err: any) {
       setError(err.message || '验证失败，请重试');
     } finally {

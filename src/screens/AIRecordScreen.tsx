@@ -22,7 +22,7 @@ import { useToast } from '../components/Toast';
 
 export default function AIRecordScreen() {
   const navigation = useNavigation<any>();
-  const { user } = useAuth();
+  const { user, phoneAuthenticated, phoneUserId } = useAuth();
   const { showToast } = useToast();
   const [text, setText] = useState('');
   const [parsed, setParsed] = useState<{
@@ -59,14 +59,16 @@ export default function AIRecordScreen() {
 
   const handleConfirm = async () => {
     if (!parsed) return;
-    if (!user) {
+    if (!user && !phoneAuthenticated) {
       showToast('请先登录', 'error');
       return;
     }
 
+    const currentUserId = user?.id || phoneUserId;
+
     setLoading(true);
     try {
-      await addRecord(user.id, {
+      await addRecord(currentUserId, {
         type: parsed.type,
         amount: parsed.amount,
         category: parsed.category,

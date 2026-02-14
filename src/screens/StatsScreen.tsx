@@ -18,12 +18,14 @@ import { COLORS, SHADOWS, BORDER_RADIUS, SPACING, FONT_SIZE, FONT_WEIGHT, CATEGO
 const screenWidth = Dimensions.get('window').width;
 
 export default function StatsScreen() {
-  const { user } = useAuth();
+  const { user, phoneAuthenticated, phoneUserId } = useAuth();
   const [records, setRecords] = useState<ExpenseRecord[]>([]);
 
+  const currentUserId = user?.id || phoneUserId;
+
   const loadData = async () => {
-    if (user) {
-      const data = await getCurrentMonthRecords(user.id);
+    if (currentUserId) {
+      const data = await getCurrentMonthRecords(currentUserId);
       setRecords(data);
     }
   };
@@ -31,14 +33,14 @@ export default function StatsScreen() {
   useFocusEffect(
     useCallback(() => {
       loadData();
-    }, [user])
+    }, [currentUserId])
   );
 
   useEffect(() => {
-    if (user) {
+    if (currentUserId) {
       loadData();
     }
-  }, [user]);
+  }, [currentUserId]);
 
   // 计算支出分类统计
   const expenseByCategory = records

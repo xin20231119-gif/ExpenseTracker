@@ -27,7 +27,7 @@ type RootStackParamList = {
 export default function EditRecordScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<RouteProp<RootStackParamList, 'EditRecord'>>();
-  const { user } = useAuth();
+  const { user, phoneAuthenticated, phoneUserId } = useAuth();
   const record = route.params?.record;
   const { showToast, showConfirm } = useToast();
 
@@ -39,9 +39,10 @@ export default function EditRecordScreen() {
 
   const isEditing = !!record;
   const categories = type === 'income' ? CATEGORIES.income : CATEGORIES.expense;
+  const currentUserId = user?.id || phoneUserId;
 
   const handleSave = async () => {
-    if (!user) {
+    if (!user && !phoneAuthenticated) {
       showToast('请先登录', 'error');
       return;
     }
@@ -57,7 +58,7 @@ export default function EditRecordScreen() {
     setSaving(true);
     try {
       if (isEditing) {
-        await updateRecord(user.id, record.id, {
+        await updateRecord(currentUserId, record.id, {
           type,
           amount: parseFloat(amount),
           category,
@@ -66,7 +67,7 @@ export default function EditRecordScreen() {
         showToast('记录已更新', 'success');
       } else {
         const today = new Date().toISOString().split('T')[0];
-        await addRecord(user.id, {
+        await addRecord(currentUserId, {
           type,
           amount: parseFloat(amount),
           category,
@@ -87,7 +88,7 @@ export default function EditRecordScreen() {
   };
 
   const handleDelete = () => {
-    if (!record || !user) return;
+    if (!record || (!user && !phoneAuthenticated)) return;
 
     // 使用原生 Alert.alert（在 React Native 上更可靠）
     Alert.alert(
@@ -103,7 +104,7 @@ export default function EditRecordScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              await deleteRecord(user.id, record.id);
+              await deleteRecord(currentUserId, record.id);
               showToast('记录已删除', 'success');
               setTimeout(() => {
                 navigation.goBack();

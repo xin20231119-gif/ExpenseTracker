@@ -17,17 +17,20 @@ import { COLORS, SHADOWS, BORDER_RADIUS, SPACING, FONT_SIZE, FONT_WEIGHT, CATEGO
 
 export default function HomeScreen() {
   const navigation = useNavigation<any>();
-  const { user, signOut } = useAuth();
+  const { user, signOut, phoneAuthenticated, phoneUserId } = useAuth();
   const [records, setRecords] = useState<ExpenseRecord[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+
+  const currentUserId = user?.id || phoneUserId;
+  const isLoggedIn = user || phoneAuthenticated;
 
   const handleSignOut = async () => {
     await signOut();
   };
 
   const loadData = async () => {
-    if (user) {
-      const data = await getCurrentMonthRecords(user.id);
+    if (currentUserId) {
+      const data = await getCurrentMonthRecords(currentUserId);
       setRecords(data);
     }
   };
@@ -35,11 +38,11 @@ export default function HomeScreen() {
   useFocusEffect(
     useCallback(() => {
       loadData();
-    }, [user])
+    }, [currentUserId])
   );
 
   useEffect(() => {
-    if (user) {
+    if (currentUserId) {
       loadData();
     }
   }, [user]);

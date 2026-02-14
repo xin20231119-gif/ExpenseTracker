@@ -24,7 +24,7 @@ import { useToast } from '../components/Toast';
 
 export default function AddRecordScreen() {
   const navigation = useNavigation();
-  const { user } = useAuth();
+  const { user, phoneAuthenticated, phoneUserId } = useAuth();
   const [type, setType] = useState<'expense' | 'income'>('expense');
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState('');
@@ -44,7 +44,7 @@ export default function AddRecordScreen() {
       showToast('请选择分类', 'error');
       return;
     }
-    if (!user) {
+    if (!user && !phoneAuthenticated) {
       showToast('请先登录', 'error');
       return;
     }
@@ -52,8 +52,9 @@ export default function AddRecordScreen() {
     setSaving(true);
     try {
       const today = new Date().toISOString().split('T')[0];
+      const currentUserId = user?.id || phoneUserId;
 
-      await addRecord(user.id, {
+      await addRecord(currentUserId, {
         type,
         amount: parseFloat(amount),
         category,
