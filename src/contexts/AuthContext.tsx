@@ -1,6 +1,9 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../utils/supabase';
 import { User } from '@supabase/supabase-js';
+
+const PHONE_USER_ID_KEY = 'phone_user_id';
 
 interface AuthContextType {
   user: User | null;
@@ -40,20 +43,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
     setPhoneAuthenticated(false);
     setPhoneUserId(null);
-    // 清除 localStorage
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('phone_authenticated');
-      localStorage.removeItem('phone_user_id');
-    }
+    // 清除 AsyncStorage
+    await AsyncStorage.removeItem(PHONE_USER_ID_KEY);
   };
 
   const handleSetPhoneAuthenticated = (value: boolean, phoneUserId?: string) => {
     setPhoneAuthenticated(value);
     if (phoneUserId) {
       setPhoneUserId(phoneUserId);
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('phone_user_id', phoneUserId);
-      }
+      AsyncStorage.setItem(PHONE_USER_ID_KEY, phoneUserId);
     }
   };
 
@@ -63,14 +61,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(false);
   };
 
-  // 从 localStorage 恢复 phoneUserId
+  // 从 AsyncStorage 恢复 phoneUserId
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const storedPhoneUserId = localStorage.getItem('phone_user_id');
+    const restorePhoneUserId = async () => {
+      const storedPhoneUserId = await AsyncStorage.getItem(PHONE_USER_ID_KEY);
       if (storedPhoneUserId) {
         setPhoneUserId(storedPhoneUserId);
       }
-    }
+    };
+    restorePhoneUserId();
   }, []);
 
   return (

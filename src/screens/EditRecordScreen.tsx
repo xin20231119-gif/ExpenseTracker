@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   TextInput,
   ScrollView,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   StatusBar,
@@ -90,33 +89,19 @@ export default function EditRecordScreen() {
   const handleDelete = () => {
     if (!record || (!user && !phoneAuthenticated)) return;
 
-    // 使用原生 Alert.alert（在 React Native 上更可靠）
-    Alert.alert(
-      '确认删除',
-      '确定要删除这条记录吗？',
-      [
-        {
-          text: '取消',
-          style: 'cancel',
-        },
-        {
-          text: '删除',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await deleteRecord(currentUserId, record.id);
-              showToast('记录已删除', 'success');
-              setTimeout(() => {
-                navigation.goBack();
-              }, 500);
-            } catch (error) {
-              console.error('删除失败:', error);
-              showToast('删除失败，请重试', 'error');
-            }
-          },
-        },
-      ]
-    );
+    // 使用 Toast 的 showConfirm 确认弹窗
+    showConfirm('确认删除', '确定要删除这条记录吗？', async () => {
+      try {
+        await deleteRecord(currentUserId, record.id);
+        showToast('记录已删除', 'success');
+        setTimeout(() => {
+          navigation.goBack();
+        }, 500);
+      } catch (error) {
+        console.error('删除失败:', error);
+        showToast('删除失败，请重试', 'error');
+      }
+    });
   };
 
   const handleClose = () => {

@@ -11,7 +11,6 @@ import {
   Platform,
   StatusBar,
   ActivityIndicator,
-  TouchableWithoutFeedback,
   Keyboard,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
@@ -79,12 +78,8 @@ export default function AddRecordScreen() {
     navigation.goBack();
   };
 
-  const dismissKeyboard = () => {
-    Keyboard.dismiss();
-  };
-
   return (
-    <TouchableWithoutFeedback onPress={dismissKeyboard}>
+    <View style={styles.container}>
       <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -186,7 +181,6 @@ export default function AddRecordScreen() {
                       isActive && styles.categoryItemActive,
                     ]}
                     onPress={() => {
-                      dismissKeyboard();
                       setCategory(cat.id);
                     }}
                     activeOpacity={0.7}
@@ -254,7 +248,7 @@ export default function AddRecordScreen() {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
-    </TouchableWithoutFeedback>
+    </View>
   );
 }
 
