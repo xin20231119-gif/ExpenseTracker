@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,8 @@ import {
   TouchableOpacity,
   RefreshControl,
   StatusBar,
+  Animated,
+  Dimensions,
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -15,14 +17,37 @@ import { useAuth } from '../contexts/AuthContext';
 import { ExpenseRecord, CATEGORIES } from '../types';
 import { COLORS, SHADOWS, BORDER_RADIUS, SPACING, FONT_SIZE, FONT_WEIGHT, CATEGORY_GRADIENTS } from '../theme';
 
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
 export default function HomeScreen() {
   const navigation = useNavigation<any>();
   const { user, signOut, phoneAuthenticated, phoneUserId } = useAuth();
   const [records, setRecords] = useState<ExpenseRecord[]>([]);
   const [refreshing, setRefreshing] = useState(false);
 
+  // 动画引用
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(30)).current;
+  const buttonScale = useRef(new Animated.Value(1)).current;
+
   const currentUserId = user?.id || phoneUserId;
   const isLoggedIn = user || phoneAuthenticated;
+
+  useEffect(() => {
+    // 页面加载动画
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
 
   const handleSignOut = async () => {
     await signOut();
@@ -83,6 +108,22 @@ export default function HomeScreen() {
     return amount.toFixed(2);
   };
 
+  // 按钮缩放动画
+  const handleButtonPressIn = () => {
+    Animated.spring(buttonScale, {
+      toValue: 0.95,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handleButtonPressOut = () => {
+    Animated.spring(buttonScale, {
+      toValue: 1,
+      friction: 3,
+      useNativeDriver: true,
+    }).start();
+  };
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" />
@@ -97,28 +138,52 @@ export default function HomeScreen() {
           />
         }
       >
-        {/* 顶部渐变背景 */}
+        {/* 顶部渐变背景 - 增加装饰性光效 */}
         <LinearGradient
           colors={[COLORS.primary, COLORS.primaryLight]}
           style={styles.headerGradient}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
         >
-          <View style={styles.headerContent}>
+          {/* 装饰性光晕 */}
+          <View style={styles.headerGlow} />
+          <View style={styles.headerGlow2} />
+
+          <Animated.View
+            style={[
+              styles.headerContent,
+              {
+                opacity: fadeAnim,
+                transform: [{ translateY: slideAnim }],
+              },
+            ]}
+          >
             <View style={styles.headerTop}>
               <Text style={styles.headerTitle}>本月收支</Text>
-              <TouchableOpacity onPress={handleSignOut} style={styles.logoutButton}>
+              <TouchableOpacity
+                onPress={handleSignOut}
+                style={styles.logoutButton}
+                activeOpacity={0.7}
+              >
                 <Text style={styles.logoutText}>登出</Text>
               </TouchableOpacity>
             </View>
             <Text style={styles.headerSubtitle}>
               {new Date().getFullYear()}年 {new Date().getMonth() + 1}月
             </Text>
-          </View>
+          </Animated.View>
         </LinearGradient>
 
-        {/* 收支概览卡片 */}
-        <View style={styles.overviewCard}>
+        {/* 收支概览卡片 - 增加悬浮效果 */}
+        <Animated.View
+          style={[
+            styles.overviewCard,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateY: slideAnim }],
+            },
+          ]}
+        >
           <View style={styles.balanceRow}>
             <View style={styles.balanceItem}>
               <View style={styles.balanceLabelContainer}>
@@ -153,54 +218,86 @@ export default function HomeScreen() {
               </Text>
             </LinearGradient>
           </View>
-        </View>
+        </Animated.View>
 
-        {/* 快捷记账按钮 */}
-        <View style={styles.buttonRow}>
+        {/* 快捷记账按钮 - 增加按压动画 */}
+        <Animated.View
+          style={[
+            styles.buttonRow,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateY: slideAnim }],
+            },
+          ]}
+        >
           <TouchableOpacity
             style={styles.aiButton}
             onPress={() => navigation.navigate('AIRecord')}
-            activeOpacity={0.8}
+            onPressIn={handleButtonPressIn}
+            onPressOut={handleButtonPressOut}
+            activeOpacity={1}
           >
-            <LinearGradient
-              colors={['#5856D6', '#7C7AE6']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.aiButtonGradient}
-            >
-              <Text style={styles.aiButtonIcon}>✨</Text>
-              <Text style={styles.aiButtonText}>AI 记账</Text>
-            </LinearGradient>
+            <Animated.View style={{ transform: [{ scale: buttonScale }], width: '100%' }}>
+              <LinearGradient
+                colors={['#5856D6', '#7C7AE6']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.aiButtonGradient}
+              >
+                <Text style={styles.aiButtonIcon}>✨</Text>
+                <Text style={styles.aiButtonText}>AI 记账</Text>
+              </LinearGradient>
+            </Animated.View>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.manualButton}
             onPress={() => navigation.navigate('AddRecord')}
-            activeOpacity={0.8}
+            onPressIn={handleButtonPressIn}
+            onPressOut={handleButtonPressOut}
+            activeOpacity={1}
           >
-            <LinearGradient
-              colors={[COLORS.accent, COLORS.accentLight]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.manualButtonGradient}
-            >
-              <Text style={styles.manualButtonIcon}>+</Text>
-              <Text style={styles.manualButtonText}>手动记账</Text>
-            </LinearGradient>
+            <Animated.View style={{ transform: [{ scale: buttonScale }], width: '100%' }}>
+              <LinearGradient
+                colors={[COLORS.accent, COLORS.accentLight]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.manualButtonGradient}
+              >
+                <Text style={styles.manualButtonIcon}>+</Text>
+                <Text style={styles.manualButtonText}>手动记账</Text>
+              </LinearGradient>
+            </Animated.View>
           </TouchableOpacity>
-        </View>
+        </Animated.View>
 
         {/* 最近记录 */}
-        <View style={styles.recentSection}>
+        <Animated.View
+          style={[
+            styles.recentSection,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateY: slideAnim }],
+            },
+          ]}
+        >
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>最近记录</Text>
-            <TouchableOpacity onPress={() => navigation.navigate('List')}>
+            <TouchableOpacity onPress={() => navigation.navigate('List')} activeOpacity={0.7}>
               <Text style={styles.seeAllText}>查看全部</Text>
             </TouchableOpacity>
           </View>
           {recentRecords.length === 0 ? (
             <View style={styles.emptyState}>
-              <Text style={styles.emptyIcon}>📝</Text>
+              <View style={styles.emptyIconContainer}>
+                <LinearGradient
+                  colors={[COLORS.primary + '20', COLORS.primary + '10']}
+                  style={styles.emptyIconGradient}
+                >
+                  <Text style={styles.emptyIcon}>📝</Text>
+                </LinearGradient>
+              </View>
               <Text style={styles.emptyText}>暂无记录，开始记账吧！</Text>
+              <Text style={styles.emptySubtext}>点击上方按钮记录您的第一笔收支</Text>
             </View>
           ) : (
             <View style={styles.recordsList}>
@@ -208,47 +305,57 @@ export default function HomeScreen() {
                 const category = getCategoryInfo(record);
                 const categoryGradient = CATEGORY_GRADIENTS[record.category] || ['#8E8E93', '#AEAEB2'];
                 return (
-                  <TouchableOpacity
+                  <Animated.View
                     key={record.id}
-                    style={styles.recordItem}
-                    activeOpacity={0.7}
-                    onPress={() => navigation.navigate('EditRecord', { record })}
+                    style={[
+                      styles.recordItem,
+                      {
+                        opacity: fadeAnim,
+                        transform: [{ translateX: slideAnim }],
+                      },
+                    ]}
                   >
-                    <View style={styles.recordLeft}>
-                      <LinearGradient
-                        colors={categoryGradient}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 1 }}
-                        style={styles.categoryIconContainer}
-                      >
-                        <Text style={styles.recordIcon}>{category.icon}</Text>
-                      </LinearGradient>
-                      <View style={styles.recordInfo}>
-                        <Text style={styles.recordCategory}>{category.name}</Text>
-                        {record.note ? (
-                          <Text style={styles.recordNote} numberOfLines={1}>
-                            {record.note}
-                          </Text>
-                        ) : null}
+                    <TouchableOpacity
+                      style={styles.recordItemInner}
+                      activeOpacity={0.7}
+                      onPress={() => navigation.navigate('EditRecord', { record })}
+                    >
+                      <View style={styles.recordLeft}>
+                        <LinearGradient
+                          colors={categoryGradient}
+                          start={{ x: 0, y: 0 }}
+                          end={{ x: 1, y: 1 }}
+                          style={styles.categoryIconContainer}
+                        >
+                          <Text style={styles.recordIcon}>{category.icon}</Text>
+                        </LinearGradient>
+                        <View style={styles.recordInfo}>
+                          <Text style={styles.recordCategory}>{category.name}</Text>
+                          {record.note ? (
+                            <Text style={styles.recordNote} numberOfLines={1}>
+                              {record.note}
+                            </Text>
+                          ) : null}
+                        </View>
                       </View>
-                    </View>
-                    <View style={styles.recordRight}>
-                      <Text
-                        style={[
-                          styles.recordAmount,
-                          { color: record.type === 'income' ? COLORS.income : COLORS.expense },
-                        ]}
-                      >
-                        {record.type === 'income' ? '+' : '-'}¥{record.amount.toFixed(2)}
-                      </Text>
-                      <Text style={styles.recordDate}>{formatDate(record.date)}</Text>
-                    </View>
-                  </TouchableOpacity>
+                      <View style={styles.recordRight}>
+                        <Text
+                          style={[
+                            styles.recordAmount,
+                            { color: record.type === 'income' ? COLORS.income : COLORS.expense },
+                          ]}
+                        >
+                          {record.type === 'income' ? '+' : '-'}¥{record.amount.toFixed(2)}
+                        </Text>
+                        <Text style={styles.recordDate}>{formatDate(record.date)}</Text>
+                      </View>
+                    </TouchableOpacity>
+                  </Animated.View>
                 );
               })}
             </View>
           )}
-        </View>
+        </Animated.View>
 
         {/* 底部安全区域 */}
         <View style={styles.bottomSafeArea} />
@@ -267,8 +374,28 @@ const styles = StyleSheet.create({
   },
   headerGradient: {
     paddingTop: 20,
-    paddingBottom: 40,
+    paddingBottom: 50,
     paddingHorizontal: SPACING.lg,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  headerGlow: {
+    position: 'absolute',
+    top: -50,
+    right: -30,
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    backgroundColor: COLORS.accent + '15',
+  },
+  headerGlow2: {
+    position: 'absolute',
+    bottom: 20,
+    left: -20,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: COLORS.income + '10',
   },
   headerContent: {
     alignItems: 'center',
@@ -288,7 +415,7 @@ const styles = StyleSheet.create({
   logoutButton: {
     position: 'absolute',
     right: -SPACING.xl,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: 'rgba(255,255,255,0.15)',
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.xs,
     borderRadius: BORDER_RADIUS.full,
@@ -296,10 +423,11 @@ const styles = StyleSheet.create({
   logoutText: {
     color: COLORS.textInverse,
     fontSize: FONT_SIZE.sm,
+    fontWeight: FONT_WEIGHT.medium,
   },
   headerSubtitle: {
     fontSize: FONT_SIZE.sm,
-    color: COLORS.textTertiary,
+    color: 'rgba(255,255,255,0.7)',
   },
   overviewCard: {
     backgroundColor: COLORS.surface,
@@ -443,25 +571,44 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: SPACING.xxxl,
   },
-  emptyIcon: {
-    fontSize: 48,
+  emptyIconContainer: {
     marginBottom: SPACING.md,
+  },
+  emptyIconGradient: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyIcon: {
+    fontSize: 36,
   },
   emptyText: {
     fontSize: FONT_SIZE.md,
+    color: COLORS.textSecondary,
+    fontWeight: FONT_WEIGHT.medium,
+    marginBottom: SPACING.xs,
+  },
+  emptySubtext: {
+    fontSize: FONT_SIZE.sm,
     color: COLORS.textTertiary,
+    textAlign: 'center',
   },
   recordsList: {
     gap: SPACING.sm,
   },
   recordItem: {
+    backgroundColor: COLORS.background,
+    borderRadius: BORDER_RADIUS.medium,
+    overflow: 'hidden',
+  },
+  recordItemInner: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: SPACING.md,
     paddingHorizontal: SPACING.sm,
-    backgroundColor: COLORS.background,
-    borderRadius: BORDER_RADIUS.medium,
   },
   recordLeft: {
     flexDirection: 'row',

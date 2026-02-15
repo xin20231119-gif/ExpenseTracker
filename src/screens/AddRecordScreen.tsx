@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,12 +6,12 @@ import {
   TouchableOpacity,
   TextInput,
   ScrollView,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   StatusBar,
   ActivityIndicator,
   Keyboard,
+  Animated,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -30,6 +30,28 @@ export default function AddRecordScreen() {
   const [note, setNote] = useState('');
   const [saving, setSaving] = useState(false);
   const { showToast } = useToast();
+
+  // 动画引用
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(20)).current;
+  const typeButtonScale = useRef(new Animated.Value(1)).current;
+  const categoryScale = useRef(new Map()).current;
+
+  useEffect(() => {
+    // 页面加载动画
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 400,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
 
   const categories = type === 'income' ? CATEGORIES.income : CATEGORIES.expense;
 
@@ -78,6 +100,43 @@ export default function AddRecordScreen() {
     navigation.goBack();
   };
 
+  // 类型切换动画
+  const handleTypeChange = (newType: 'expense' | 'income') => {
+    Animated.sequence([
+      Animated.spring(typeButtonScale, {
+        toValue: 0.95,
+        useNativeDriver: true,
+      }),
+      Animated.spring(typeButtonScale, {
+        toValue: 1,
+        useNativeDriver: true,
+      }),
+    ]).start();
+    setType(newType);
+    setCategory('');
+  };
+
+  // 分类选择动画
+  const handleCategoryPress = (catId: string) => {
+    // 创建缩放动画
+    const scaleAnim = categoryScale.get(catId) || new Animated.Value(1);
+
+    Animated.sequence([
+      Animated.spring(scaleAnim, {
+        toValue: 0.9,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        friction: 3,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    categoryScale.set(catId, scaleAnim);
+    setCategory(catId);
+  };
+
   return (
     <View style={styles.container}>
       <KeyboardAvoidingView
@@ -88,13 +147,21 @@ export default function AddRecordScreen() {
         <StatusBar barStyle="dark-content" />
 
         {/* 顶部导航栏 */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
+        <Animated.View
+          style={[
+            styles.header,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateY: slideAnim }],
+            },
+          ]}
+        >
+          <TouchableOpacity onPress={handleClose} style={styles.closeButton} activeOpacity={0.7}>
             <Text style={styles.closeButtonText}>✕</Text>
           </TouchableOpacity>
           <Text style={styles.headerTitle}>添加记录</Text>
           <View style={styles.placeholder} />
-        </View>
+        </Animated.View>
 
         <ScrollView
           style={styles.scrollView}
@@ -102,27 +169,35 @@ export default function AddRecordScreen() {
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={styles.scrollContent}
         >
-          {/* 类型选择 */}
-          <View style={styles.typeContainer}>
+          {/* 类型选择 - 带动画 */}
+          <Animated.View
+            style={[
+              styles.typeContainer,
+              {
+                opacity: fadeAnim,
+                transform: [{ translateY: slideAnim }],
+              },
+            ]}
+          >
             <TouchableOpacity
               style={[
                 styles.typeButton,
                 type === 'expense' && styles.typeButtonActiveExpense,
               ]}
-              onPress={() => {
-                setType('expense');
-                setCategory('');
-              }}
+              onPress={() => handleTypeChange('expense')}
+              activeOpacity={0.8}
             >
               {type === 'expense' ? (
-                <LinearGradient
-                  colors={['#FF6B6B', '#FF8A8A']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.typeButtonGradient}
-                >
-                  <Text style={styles.typeButtonTextActive}>支出</Text>
-                </LinearGradient>
+                <Animated.View style={{ transform: [{ scale: typeButtonScale }] }}>
+                  <LinearGradient
+                    colors={['#FF6B6B', '#FF8A8A']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.typeButtonGradient}
+                  >
+                    <Text style={styles.typeButtonTextActive}>支出</Text>
+                  </LinearGradient>
+                </Animated.View>
               ) : (
                 <Text style={styles.typeButtonTextInactive}>支出</Text>
               )}
@@ -132,28 +207,36 @@ export default function AddRecordScreen() {
                 styles.typeButton,
                 type === 'income' && styles.typeButtonActiveIncome,
               ]}
-              onPress={() => {
-                setType('income');
-                setCategory('');
-              }}
+              onPress={() => handleTypeChange('income')}
+              activeOpacity={0.8}
             >
               {type === 'income' ? (
-                <LinearGradient
-                  colors={[COLORS.income, COLORS.incomeLight]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.typeButtonGradient}
-                >
-                  <Text style={styles.typeButtonTextActive}>收入</Text>
-                </LinearGradient>
+                <Animated.View style={{ transform: [{ scale: typeButtonScale }] }}>
+                  <LinearGradient
+                    colors={[COLORS.income, COLORS.incomeLight]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.typeButtonGradient}
+                  >
+                    <Text style={styles.typeButtonTextActive}>收入</Text>
+                  </LinearGradient>
+                </Animated.View>
               ) : (
                 <Text style={styles.typeButtonTextInactive}>收入</Text>
               )}
             </TouchableOpacity>
-          </View>
+          </Animated.View>
 
           {/* 金额输入 */}
-          <View style={styles.amountContainer}>
+          <Animated.View
+            style={[
+              styles.amountContainer,
+              {
+                opacity: fadeAnim,
+                transform: [{ translateY: slideAnim }],
+              },
+            ]}
+          >
             <Text style={styles.currencySymbol}>¥</Text>
             <TextInput
               style={styles.amountInput}
@@ -164,54 +247,71 @@ export default function AddRecordScreen() {
               onChangeText={setAmount}
               autoFocus
             />
-          </View>
+          </Animated.View>
 
           {/* 分类选择 */}
-          <View style={styles.section}>
+          <Animated.View
+            style={[
+              styles.section,
+              {
+                opacity: fadeAnim,
+                transform: [{ translateY: slideAnim }],
+              },
+            ]}
+          >
             <Text style={styles.sectionTitle}>选择分类</Text>
             <View style={styles.categoryGrid}>
               {categories.map(cat => {
                 const isActive = category === cat.id;
                 const gradient = CATEGORY_GRADIENTS[cat.id] || ['#8E8E93', '#AEAEB2'];
+                const scaleAnim = categoryScale.get(cat.id) || new Animated.Value(1);
+
                 return (
-                  <TouchableOpacity
-                    key={cat.id}
-                    style={[
-                      styles.categoryItem,
-                      isActive && styles.categoryItemActive,
-                    ]}
-                    onPress={() => {
-                      setCategory(cat.id);
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    <LinearGradient
-                      colors={isActive ? gradient : [COLORS.background, COLORS.background]}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 1 }}
+                  <Animated.View key={cat.id} style={{ transform: [{ scale: scaleAnim }] }}>
+                    <TouchableOpacity
                       style={[
-                        styles.categoryIconContainer,
-                        !isActive && styles.categoryIconContainerInactive,
+                        styles.categoryItem,
+                        isActive && styles.categoryItemActive,
                       ]}
+                      onPress={() => handleCategoryPress(cat.id)}
+                      activeOpacity={0.7}
                     >
-                      <Text style={styles.categoryIcon}>{cat.icon}</Text>
-                    </LinearGradient>
-                    <Text
-                      style={[
-                        styles.categoryName,
-                        isActive && styles.categoryNameActive,
-                      ]}
-                    >
-                      {cat.name}
-                    </Text>
-                  </TouchableOpacity>
+                      <LinearGradient
+                        colors={isActive ? gradient : [COLORS.background, COLORS.background]}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={[
+                          styles.categoryIconContainer,
+                          !isActive && styles.categoryIconContainerInactive,
+                        ]}
+                      >
+                        <Text style={styles.categoryIcon}>{cat.icon}</Text>
+                      </LinearGradient>
+                      <Text
+                        style={[
+                          styles.categoryName,
+                          isActive && styles.categoryNameActive,
+                        ]}
+                      >
+                        {cat.name}
+                      </Text>
+                    </TouchableOpacity>
+                  </Animated.View>
                 );
               })}
             </View>
-          </View>
+          </Animated.View>
 
           {/* 备注输入 */}
-          <View style={styles.section}>
+          <Animated.View
+            style={[
+              styles.section,
+              {
+                opacity: fadeAnim,
+                transform: [{ translateY: slideAnim }],
+              },
+            ]}
+          >
             <Text style={styles.sectionTitle}>备注（可选）</Text>
             <TextInput
               style={styles.noteInput}
@@ -222,11 +322,18 @@ export default function AddRecordScreen() {
               multiline
               numberOfLines={3}
             />
-          </View>
+          </Animated.View>
         </ScrollView>
 
         {/* 保存按钮 */}
-        <View style={styles.footer}>
+        <Animated.View
+          style={[
+            styles.footer,
+            {
+              opacity: fadeAnim,
+            },
+          ]}
+        >
           <TouchableOpacity
             style={styles.saveButton}
             onPress={handleSave}
@@ -246,7 +353,7 @@ export default function AddRecordScreen() {
               )}
             </LinearGradient>
           </TouchableOpacity>
-        </View>
+        </Animated.View>
       </KeyboardAvoidingView>
     </View>
   );

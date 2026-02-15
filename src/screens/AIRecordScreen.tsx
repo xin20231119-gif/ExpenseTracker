@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,11 +6,11 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
   StatusBar,
+  Animated,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -33,6 +33,39 @@ export default function AIRecordScreen() {
   } | null>(null);
   const [loading, setLoading] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+  // 动画引用
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(20)).current;
+  const resultSlideAnim = useRef(new Animated.Value(50)).current;
+  const exampleButtonScale = useRef(new Map()).current;
+
+  useEffect(() => {
+    // 页面加载动画
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 400,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
+
+  // 识别结果出现时的动画
+  useEffect(() => {
+    if (parsed) {
+      Animated.timing(resultSlideAnim, {
+        toValue: 0,
+        duration: 400,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [parsed]);
 
   const handleParse = async () => {
     if (!text.trim()) {
@@ -97,6 +130,25 @@ export default function AIRecordScreen() {
     navigation.goBack();
   };
 
+  // 示例点击动画
+  const handleExamplePress = (example: string) => {
+    const scaleAnim = exampleButtonScale.get(example) || new Animated.Value(1);
+
+    Animated.sequence([
+      Animated.spring(scaleAnim, {
+        toValue: 0.95,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    exampleButtonScale.set(example, scaleAnim);
+    setText(example);
+  };
+
   const examples = [
     '今天中午和同事去海底捞吃饭，花了280块',
     '月底了，发工资了，税后18000',
@@ -114,17 +166,33 @@ export default function AIRecordScreen() {
         <StatusBar barStyle="dark-content" />
 
       {/* 顶部导航栏 */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
+      <Animated.View
+        style={[
+          styles.header,
+          {
+            opacity: fadeAnim,
+            transform: [{ translateY: slideAnim }],
+          },
+        ]}
+      >
+        <TouchableOpacity onPress={handleClose} style={styles.closeButton} activeOpacity={0.7}>
           <Text style={styles.closeButtonText}>✕</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>AI 记账</Text>
         <View style={styles.placeholder} />
-      </View>
+      </Animated.View>
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* 输入区域 */}
-        <View style={styles.inputSection}>
+        <Animated.View
+          style={[
+            styles.inputSection,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateY: slideAnim }],
+            },
+          ]}
+        >
           <View style={styles.inputTitleContainer}>
             <LinearGradient
               colors={['#5856D6', '#7C7AE6']}
@@ -134,7 +202,10 @@ export default function AIRecordScreen() {
             >
               <Text style={styles.aiIcon}>✨</Text>
             </LinearGradient>
-            <Text style={styles.sectionTitle}>用自然语言描述你的收支</Text>
+            <View>
+              <Text style={styles.sectionTitle}>用自然语言描述你的收支</Text>
+              <Text style={styles.sectionSubtitle}>AI 智能识别，快速记账</Text>
+            </View>
           </View>
           <TextInput
             style={styles.textInput}
@@ -163,13 +234,23 @@ export default function AIRecordScreen() {
               )}
             </LinearGradient>
           </TouchableOpacity>
-        </View>
+        </Animated.View>
 
         {/* 识别结果 */}
         {parsed && (
-          <View style={styles.resultSection}>
+          <Animated.View
+            style={[
+              styles.resultSection,
+              {
+                opacity: fadeAnim,
+                transform: [{ translateY: resultSlideAnim }],
+              },
+            ]}
+          >
             <View style={styles.resultHeader}>
-              <Text style={styles.resultTitle}>识别结果</Text>
+              <View style={styles.resultTitleContainer}>
+                <Text style={styles.resultTitle}>识别结果</Text>
+              </View>
               <View style={styles.successBadge}>
                 <Text style={styles.successBadgeText}>✓ 识别成功</Text>
               </View>
@@ -229,26 +310,38 @@ export default function AIRecordScreen() {
                 </LinearGradient>
               </TouchableOpacity>
             </View>
-          </View>
+          </Animated.View>
         )}
 
         {/* 示例 */}
         {!parsed && (
-          <View style={styles.examplesSection}>
+          <Animated.View
+            style={[
+              styles.examplesSection,
+              {
+                opacity: fadeAnim,
+                transform: [{ translateY: slideAnim }],
+              },
+            ]}
+          >
             <Text style={styles.examplesTitle}>试试这样说</Text>
             <View style={styles.examplesContainer}>
-              {examples.map((example, index) => (
-                <TouchableOpacity
-                  key={index}
-                  style={styles.exampleItem}
-                  onPress={() => setText(example)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.exampleText}>{example}</Text>
-                </TouchableOpacity>
-              ))}
+              {examples.map((example, index) => {
+                const scaleAnim = exampleButtonScale.get(example) || new Animated.Value(1);
+                return (
+                  <Animated.View key={index} style={{ transform: [{ scale: scaleAnim }] }}>
+                    <TouchableOpacity
+                      style={styles.exampleItem}
+                      onPress={() => handleExamplePress(example)}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.exampleText}>{example}</Text>
+                    </TouchableOpacity>
+                  </Animated.View>
+                );
+              })}
             </View>
-          </View>
+          </Animated.View>
         )}
 
         {/* 底部安全区域 */}
@@ -311,20 +404,25 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.md,
   },
   aiIconGradient: {
-    width: 32,
-    height: 32,
-    borderRadius: BORDER_RADIUS.small,
+    width: 40,
+    height: 40,
+    borderRadius: BORDER_RADIUS.medium,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: SPACING.sm,
+    marginRight: SPACING.md,
   },
   aiIcon: {
-    fontSize: 16,
+    fontSize: 18,
   },
   sectionTitle: {
     fontSize: FONT_SIZE.md,
     fontWeight: FONT_WEIGHT.semibold,
     color: COLORS.textPrimary,
+  },
+  sectionSubtitle: {
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.textTertiary,
+    marginTop: 2,
   },
   textInput: {
     backgroundColor: COLORS.background,
@@ -364,6 +462,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: SPACING.md,
+  },
+  resultTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   resultTitle: {
     fontSize: FONT_SIZE.md,

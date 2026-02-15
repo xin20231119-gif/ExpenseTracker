@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   ScrollView,
   Dimensions,
   StatusBar,
+  Animated,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -21,7 +22,37 @@ export default function StatsScreen() {
   const { user, phoneAuthenticated, phoneUserId } = useAuth();
   const [records, setRecords] = useState<ExpenseRecord[]>([]);
 
+  // 动画引用
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(30)).current;
+  const chartAnim = useRef(new Animated.Value(0)).current;
+
   const currentUserId = user?.id || phoneUserId;
+
+  useEffect(() => {
+    // 页面加载动画
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    // 图表数据加载后触发动画
+    if (records.length > 0) {
+      Animated.timing(chartAnim, {
+        toValue: 1,
+        duration: 800,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, []);
 
   const loadData = async () => {
     if (currentUserId) {
@@ -128,14 +159,34 @@ export default function StatsScreen() {
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
         >
-          <View style={styles.headerContent}>
+          {/* 装饰性光晕 */}
+          <View style={styles.headerGlow} />
+          <Animated.View
+            style={[
+              styles.headerContent,
+              {
+                opacity: fadeAnim,
+                transform: [{ translateY: slideAnim }],
+              },
+            ]}
+          >
             <Text style={styles.headerTitle}>本月统计</Text>
-            <Text style={styles.headerSubtitle}>{currentMonth}</Text>
-          </View>
+            <View style={styles.monthBadge}>
+              <Text style={styles.monthBadgeText}>{currentMonth}</Text>
+            </View>
+          </Animated.View>
         </LinearGradient>
 
         {/* 收支概览卡片 */}
-        <View style={styles.summaryCard}>
+        <Animated.View
+          style={[
+            styles.summaryCard,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateY: slideAnim }],
+            },
+          ]}
+        >
           <View style={styles.summaryRow}>
             <View style={styles.summaryItem}>
               <View style={styles.summaryLabelContainer}>
@@ -170,11 +221,27 @@ export default function StatsScreen() {
               </Text>
             </LinearGradient>
           </View>
-        </View>
+        </Animated.View>
 
         {/* 支出饼图 */}
         {expensePieData.length > 0 && (
-          <View style={styles.chartCard}>
+          <Animated.View
+            style={[
+              styles.chartCard,
+              {
+                opacity: fadeAnim,
+                transform: [
+                  { translateY: slideAnim },
+                  {
+                    scale: chartAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0.95, 1],
+                    }),
+                  },
+                ],
+              },
+            ]}
+          >
             <View style={styles.chartHeader}>
               <View style={styles.chartTitleContainer}>
                 <LinearGradient
@@ -185,9 +252,11 @@ export default function StatsScreen() {
                 >
                   <Text style={styles.chartTitleIconText}>💸</Text>
                 </LinearGradient>
-                <Text style={styles.chartTitle}>支出分布</Text>
+                <View>
+                  <Text style={styles.chartTitle}>支出分布</Text>
+                  <Text style={styles.chartSubtitle}>共 {expensePieData.length} 个分类</Text>
+                </View>
               </View>
-              <Text style={styles.chartSubtitle}>共 {expensePieData.length} 个分类</Text>
             </View>
             <PieChart
               data={expensePieData}
@@ -208,12 +277,28 @@ export default function StatsScreen() {
                 </View>
               ))}
             </View>
-          </View>
+          </Animated.View>
         )}
 
         {/* 收入饼图 */}
         {incomePieData.length > 0 && (
-          <View style={styles.chartCard}>
+          <Animated.View
+            style={[
+              styles.chartCard,
+              {
+                opacity: fadeAnim,
+                transform: [
+                  { translateY: slideAnim },
+                  {
+                    scale: chartAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0.95, 1],
+                    }),
+                  },
+                ],
+              },
+            ]}
+          >
             <View style={styles.chartHeader}>
               <View style={styles.chartTitleContainer}>
                 <LinearGradient
@@ -224,9 +309,11 @@ export default function StatsScreen() {
                 >
                   <Text style={styles.chartTitleIconText}>💰</Text>
                 </LinearGradient>
-                <Text style={styles.chartTitle}>收入分布</Text>
+                <View>
+                  <Text style={styles.chartTitle}>收入分布</Text>
+                  <Text style={styles.chartSubtitle}>共 {incomePieData.length} 个分类</Text>
+                </View>
               </View>
-              <Text style={styles.chartSubtitle}>共 {incomePieData.length} 个分类</Text>
             </View>
             <PieChart
               data={incomePieData}
@@ -247,15 +334,30 @@ export default function StatsScreen() {
                 </View>
               ))}
             </View>
-          </View>
+          </Animated.View>
         )}
 
         {records.length === 0 && (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyIcon}>📊</Text>
+          <Animated.View
+            style={[
+              styles.emptyState,
+              {
+                opacity: fadeAnim,
+                transform: [{ translateY: slideAnim }],
+              },
+            ]}
+          >
+            <View style={styles.emptyIconContainer}>
+              <LinearGradient
+                colors={[COLORS.primary + '20', COLORS.primary + '10']}
+                style={styles.emptyIconGradient}
+              >
+                <Text style={styles.emptyIcon}>📊</Text>
+              </LinearGradient>
+            </View>
             <Text style={styles.emptyText}>暂无数据</Text>
             <Text style={styles.emptySubtext}>开始记账后可以看到统计图表</Text>
-          </View>
+          </Animated.View>
         )}
 
         {/* 底部安全区域 */}
@@ -277,6 +379,17 @@ const styles = StyleSheet.create({
     paddingTop: StatusBar.currentHeight ? StatusBar.currentHeight + 20 : 60,
     paddingBottom: 50,
     paddingHorizontal: SPACING.lg,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  headerGlow: {
+    position: 'absolute',
+    top: -20,
+    right: -30,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: COLORS.expense + '15',
   },
   headerContent: {
     alignItems: 'center',
@@ -285,11 +398,18 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZE.xl,
     fontWeight: FONT_WEIGHT.semibold,
     color: COLORS.textInverse,
-    marginBottom: SPACING.xs,
+    marginBottom: SPACING.sm,
   },
-  headerSubtitle: {
+  monthBadge: {
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.xs,
+    borderRadius: BORDER_RADIUS.full,
+  },
+  monthBadgeText: {
     fontSize: FONT_SIZE.sm,
-    color: COLORS.textTertiary,
+    color: 'rgba(255,255,255,0.8)',
+    fontWeight: FONT_WEIGHT.medium,
   },
   summaryCard: {
     backgroundColor: COLORS.surface,
@@ -374,15 +494,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   chartTitleIcon: {
-    width: 36,
-    height: 36,
+    width: 44,
+    height: 44,
     borderRadius: BORDER_RADIUS.medium,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: SPACING.sm,
+    marginRight: SPACING.md,
   },
   chartTitleIconText: {
-    fontSize: 18,
+    fontSize: 20,
   },
   chartTitle: {
     fontSize: FONT_SIZE.lg,
@@ -392,6 +512,7 @@ const styles = StyleSheet.create({
   chartSubtitle: {
     fontSize: FONT_SIZE.sm,
     color: COLORS.textTertiary,
+    marginTop: 2,
   },
   legendList: {
     marginTop: SPACING.md,
@@ -429,9 +550,18 @@ const styles = StyleSheet.create({
     borderRadius: BORDER_RADIUS.large,
     ...SHADOWS.medium,
   },
-  emptyIcon: {
-    fontSize: 56,
+  emptyIconContainer: {
     marginBottom: SPACING.md,
+  },
+  emptyIconGradient: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyIcon: {
+    fontSize: 40,
   },
   emptyText: {
     fontSize: FONT_SIZE.lg,
