@@ -6,12 +6,13 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { LinearGradient } from 'expo-linear-gradient';
 
-// Web 端修复滚动问题
+// Web 端修复问题
 if (typeof document !== 'undefined') {
   const style = document.createElement('style');
   style.textContent = `
     body { overflow: auto !important; }
     html, body, #root { height: auto !important; min-height: 100%; }
+    [visibility="hidden"] { visibility: visible !important; }
   `;
   document.head.appendChild(style);
 }
