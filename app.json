@@ -36,7 +36,8 @@
         "apple-mobile-web-app-title": "记账助手",
         "mobileWebAppCapable": "yes",
         "viewportFit": "cover"
-      }
+      },
+      "style": "body { overflow: auto !important; }"
     },
     "extra": {
       "eas": {
