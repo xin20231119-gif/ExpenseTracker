@@ -8,13 +8,38 @@ import { LinearGradient } from 'expo-linear-gradient';
 
 // Web 端修复问题
 if (typeof document !== 'undefined') {
-  const style = document.createElement('style');
-  style.textContent = `
-    body { overflow: auto !important; }
-    html, body, #root { height: auto !important; min-height: 100%; }
-    [visibility="hidden"] { visibility: visible !important; }
-  `;
-  document.head.appendChild(style);
+  // 修复滚动、高度和背景色 - 必须在最前面
+  (function() {
+    const style = document.createElement('style');
+    style.textContent = `
+      html, body, #root {
+        height: 100% !important;
+        min-height: 100% !important;
+        display: flex !important;
+        flex-direction: column !important;
+        background-color: #F8F9FB !important;
+      }
+      body { overflow: auto !important; }
+    `;
+    document.head.appendChild(style);
+  })();
+
+  // 强制修复高度和背景色
+  const fixHeight = () => {
+    document.body.style.height = '100%';
+    document.body.style.minHeight = '100%';
+    document.body.style.backgroundColor = '#F8F9FB';
+    const root = document.getElementById('root');
+    if (root) {
+      root.style.height = '100%';
+      root.style.minHeight = '100%';
+      root.style.backgroundColor = '#F8F9FB';
+    }
+  };
+
+  setTimeout(fixHeight, 0);
+  setTimeout(fixHeight, 100);
+  setTimeout(fixHeight, 500);
 }
 
 import HomeScreen from './src/screens/HomeScreen';
