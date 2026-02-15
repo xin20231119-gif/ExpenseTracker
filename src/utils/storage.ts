@@ -1,8 +1,69 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from './supabase';
 import { ExpenseRecord } from '../types';
 
+const CACHE_KEY_PREFIX = 'expense_cache_';
+const CACHE_EXPIRY = 5 * 60 * 1000; // 缓存5分钟
+
+// 缓存管理
+const getCacheKey = (userId: string) => `${CACHE_KEY_PREFIX}${userId}`;
+
+const getCachedRecords = async (userId: string): Promise<ExpenseRecord[] | null> => {
+  try {
+    const cached = await AsyncStorage.getItem(getCacheKey(userId));
+    if (cached) {
+      const { data, timestamp } = JSON.parse(cached);
+      // 检查缓存是否过期
+      if (Date.now() - timestamp < CACHE_EXPIRY) {
+        return data;
+      }
+    }
+  } catch (e) {
+    console.error('Cache read error:', e);
+  }
+  return null;
+};
+
+const setCachedRecords = async (userId: string, records: ExpenseRecord[]) => {
+  try {
+    await AsyncStorage.setItem(getCacheKey(userId), JSON.stringify({
+      data: records,
+      timestamp: Date.now(),
+    }));
+  } catch (e) {
+    console.error('Cache write error:', e);
+  }
+};
+
+const clearCache = async (userId: string) => {
+  try {
+    await AsyncStorage.removeItem(getCacheKey(userId));
+  } catch (e) {
+    console.error('Cache clear error:', e);
+  }
+};
+
 // 获取所有记录
 export const getRecords = async (userId: string): Promise<ExpenseRecord[]> => {
+  try {
+    // 先尝试从缓存获取
+    const cached = await getCachedRecords(userId);
+    if (cached) {
+      // 返回缓存数据，同时在后台刷新
+      fetchAndCacheRecords(userId);
+      return cached;
+    }
+
+    // 缓存不存在，从服务器获取
+    return await fetchAndCacheRecords(userId);
+  } catch (error) {
+    console.error('Error loading records:', error);
+    return [];
+  }
+};
+
+// 后台获取并缓存记录
+const fetchAndCacheRecords = async (userId: string): Promise<ExpenseRecord[]> => {
   try {
     const { data, error } = await supabase
       .from('expenses')
@@ -16,7 +77,7 @@ export const getRecords = async (userId: string): Promise<ExpenseRecord[]> => {
     }
 
     // 转换数据库字段到前端模型
-    return (data || []).map(row => ({
+    const records = (data || []).map(row => ({
       id: row.id,
       type: row.type,
       amount: Number(row.amount),
@@ -25,6 +86,11 @@ export const getRecords = async (userId: string): Promise<ExpenseRecord[]> => {
       date: row.date,
       createdAt: new Date(row.created_at).getTime(),
     }));
+
+    // 缓存结果
+    await setCachedRecords(userId, records);
+
+    return records;
   } catch (error) {
     console.error('Error loading records:', error);
     return [];
@@ -86,6 +152,9 @@ export const addRecord = async (userId: string, record: Omit<ExpenseRecord, 'id'
     throw error;
   }
 
+  // 清除缓存
+  await clearCache(userId);
+
   return newRecord;
 };
 
@@ -101,6 +170,9 @@ export const deleteRecord = async (userId: string, id: string): Promise<void> =>
     console.error('Error deleting record:', error);
     throw error;
   }
+
+  // 清除缓存
+  await clearCache(userId);
 };
 
 // 更新记录
@@ -123,6 +195,9 @@ export const updateRecord = async (userId: string, id: string, updates: Partial<
     console.error('Error updating record:', error);
     throw error;
   }
+
+  // 清除缓存
+  await clearCache(userId);
 };
 
 // 获取本月记录

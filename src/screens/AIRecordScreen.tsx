@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { addRecord } from '../utils/storage';
 import { useAuth } from '../contexts/AuthContext';
 import { parseWithGLM, getCategoryName } from '../utils/zhipu';
@@ -23,6 +24,7 @@ import { useToast } from '../components/Toast';
 export default function AIRecordScreen() {
   const navigation = useNavigation<any>();
   const { user, phoneAuthenticated, phoneUserId } = useAuth();
+  const insets = useSafeAreaInsets();
   const { showToast } = useToast();
   const [text, setText] = useState('');
   const [parsed, setParsed] = useState<{
@@ -106,11 +108,12 @@ export default function AIRecordScreen() {
   ];
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <StatusBar barStyle="dark-content" />
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <StatusBar barStyle="dark-content" />
 
       {/* 顶部导航栏 */}
       <View style={styles.header}>
@@ -254,6 +257,7 @@ export default function AIRecordScreen() {
         <View style={styles.bottomSafeArea} />
       </ScrollView>
     </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 

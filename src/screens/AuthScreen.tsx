@@ -12,6 +12,7 @@ import {
   Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '../utils/supabase';
 import { COLORS, SHADOWS, BORDER_RADIUS, SPACING, FONT_SIZE, FONT_WEIGHT } from '../theme';
 
@@ -26,6 +27,7 @@ interface AuthScreenProps {
 type LoginMethod = 'email' | 'phone';
 
 export default function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
+  const insets = useSafeAreaInsets();
   const [loginMethod, setLoginMethod] = useState<LoginMethod>('email');
   const [isLogin, setIsLogin] = useState(true);
 
@@ -158,11 +160,12 @@ export default function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
   const handleAuth = loginMethod === 'email' ? handleEmailAuth : handlePhoneLogin;
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <StatusBar barStyle="dark-content" />
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <StatusBar barStyle="dark-content" />
 
       <View style={styles.content}>
         {/* Logo */}
@@ -336,6 +339,7 @@ export default function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
         </View>
       </View>
     </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 

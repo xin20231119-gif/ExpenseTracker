@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { addRecord, updateRecord, deleteRecord } from '../utils/storage';
 import { useAuth } from '../contexts/AuthContext';
 import { CATEGORIES, ExpenseRecord } from '../types';
@@ -27,6 +28,7 @@ export default function EditRecordScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<RouteProp<RootStackParamList, 'EditRecord'>>();
   const { user, phoneAuthenticated, phoneUserId } = useAuth();
+  const insets = useSafeAreaInsets();
   const record = route.params?.record;
   const { showToast, showConfirm } = useToast();
 
@@ -109,11 +111,12 @@ export default function EditRecordScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <StatusBar barStyle="dark-content" />
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <StatusBar barStyle="dark-content" />
 
       {/* 顶部导航栏 */}
       <View style={styles.header}>
@@ -256,6 +259,7 @@ export default function EditRecordScreen() {
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 

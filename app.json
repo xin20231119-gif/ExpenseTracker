@@ -28,7 +28,15 @@
     },
     "web": {
       "favicon": "./assets/favicon.png",
-      "bundler": "metro"
+      "bundler": "metro",
+      "meta": {
+        "themeColor": "#1A2744",
+        "apple-mobile-web-app-capable": "yes",
+        "apple-mobile-web-app-status-bar-style": "default",
+        "apple-mobile-web-app-title": "记账助手",
+        "mobileWebAppCapable": "yes",
+        "viewportFit": "cover"
+      }
     },
     "extra": {
       "eas": {
