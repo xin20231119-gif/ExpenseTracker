@@ -10,7 +10,6 @@ import {
 import { useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { PieChart } from 'react-native-chart-kit';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getCurrentMonthRecords } from '../utils/storage';
 import { useAuth } from '../contexts/AuthContext';
 import { ExpenseRecord, CATEGORIES } from '../types';
@@ -19,7 +18,6 @@ import { COLORS, SHADOWS, BORDER_RADIUS, SPACING, FONT_SIZE, FONT_WEIGHT, CATEGO
 const screenWidth = Dimensions.get('window').width;
 
 export default function StatsScreen() {
-  const insets = useSafeAreaInsets();
   const { user, phoneAuthenticated, phoneUserId } = useAuth();
   const [records, setRecords] = useState<ExpenseRecord[]>([]);
 
@@ -120,7 +118,7 @@ export default function StatsScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <View style={styles.container}>
       <StatusBar barStyle="light-content" />
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* 顶部渐变背景 */}
@@ -263,7 +261,7 @@ export default function StatsScreen() {
         {/* 底部安全区域 */}
         <View style={styles.bottomSafeArea} />
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 

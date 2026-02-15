@@ -10,7 +10,6 @@ import {
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getCurrentMonthRecords } from '../utils/storage';
 import { useAuth } from '../contexts/AuthContext';
 import { ExpenseRecord, CATEGORIES } from '../types';
@@ -19,7 +18,6 @@ import { COLORS, SHADOWS, BORDER_RADIUS, SPACING, FONT_SIZE, FONT_WEIGHT, CATEGO
 export default function HomeScreen() {
   const navigation = useNavigation<any>();
   const { user, signOut, phoneAuthenticated, phoneUserId } = useAuth();
-  const insets = useSafeAreaInsets();
   const [records, setRecords] = useState<ExpenseRecord[]>([]);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -86,7 +84,7 @@ export default function HomeScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <View style={styles.container}>
       <StatusBar barStyle="light-content" />
       <ScrollView
         style={styles.scrollView}
@@ -255,7 +253,7 @@ export default function HomeScreen() {
         {/* 底部安全区域 */}
         <View style={styles.bottomSafeArea} />
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 

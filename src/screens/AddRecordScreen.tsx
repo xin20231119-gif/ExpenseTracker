@@ -15,7 +15,6 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { addRecord } from '../utils/storage';
 import { useAuth } from '../contexts/AuthContext';
 import { CATEGORIES } from '../types';
@@ -24,7 +23,6 @@ import { useToast } from '../components/Toast';
 
 export default function AddRecordScreen() {
   const navigation = useNavigation();
-  const insets = useSafeAreaInsets();
   const { user, phoneAuthenticated, phoneUserId } = useAuth();
   const [type, setType] = useState<'expense' | 'income'>('expense');
   const [amount, setAmount] = useState('');
@@ -81,7 +79,7 @@ export default function AddRecordScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+    <View style={styles.container}>
       <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -250,7 +248,7 @@ export default function AddRecordScreen() {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 }
 

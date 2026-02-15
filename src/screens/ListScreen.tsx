@@ -9,7 +9,6 @@ import {
 } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getRecords } from '../utils/storage';
 import { useAuth } from '../contexts/AuthContext';
 import { ExpenseRecord, CATEGORIES } from '../types';
@@ -18,7 +17,6 @@ import { COLORS, SHADOWS, BORDER_RADIUS, SPACING, FONT_SIZE, FONT_WEIGHT, CATEGO
 export default function ListScreen() {
   const navigation = useNavigation<any>();
   const { user, phoneAuthenticated, phoneUserId } = useAuth();
-  const insets = useSafeAreaInsets();
   const [records, setRecords] = useState<ExpenseRecord[]>([]);
 
   const currentUserId = user?.id || phoneUserId;
@@ -96,7 +94,7 @@ export default function ListScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <View style={styles.container}>
       <StatusBar barStyle="light-content" />
 
       {/* 顶部渐变背景 */}
@@ -131,7 +129,7 @@ export default function ListScreen() {
       <View style={styles.hintContainer}>
         <Text style={styles.hint}>点击记录可编辑或删除</Text>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
