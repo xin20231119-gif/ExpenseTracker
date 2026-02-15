@@ -1,10 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Platform, Modal, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, Platform, Modal, TouchableOpacity, ActivityIndicator, StyleSheetManager } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { LinearGradient } from 'expo-linear-gradient';
+
+// Web 端修复滚动问题
+if (typeof document !== 'undefined') {
+  const style = document.createElement('style');
+  style.textContent = `
+    body { overflow: auto !important; }
+    html, body, #root { height: auto !important; min-height: 100%; }
+  `;
+  document.head.appendChild(style);
+}
 
 import HomeScreen from './src/screens/HomeScreen';
 import AddRecordScreen from './src/screens/AddRecordScreen';
